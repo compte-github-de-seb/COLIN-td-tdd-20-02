@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion des stocks</title>
+    <style>
+        #container {
+            width: 500px;
+            margin: 20px auto;
+            font-family: Arial, sans-serif;
+        }
+        .produit {
+            margin-bottom: 10px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .produit input {
+            margin-right: 10px;
+        }
+        #actions {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <h2>Gestion des stocks</h2>
+        <div id="stock-list">
+            <!-- Liste des produits affichée ici -->
+        </div>
+        <div id="actions">
+            <h3>Ajouter un produit</h3>
+            <input type="text" id="nomProduit" placeholder="Nom du produit">
+            <input type="number" id="quantiteProduit" placeholder="Quantité">
+            <input type="date" id="datePeremptionProduit">
+            <button onclick="ajouterProduit()">Ajouter produit</button>
+            <h3>Tests</h3>
+            <button onclick="runTests()">Exécuter les tests</button>
+            <div id="test-result"></div>
+        </div>
+    </div>
+
+    <script>
+        let enCoursDeTest = false; // Variable de contrôle pour indiquer si les tests sont en cours
+        let stock = [];
+        
+        function ajouterProduit(nomProduit, quantiteProduit, datePeremptionProduit) {
+            let nom, quantite, datePeremption;
+            
+            if (nomProduit && quantiteProduit && datePeremptionProduit) {
+                nom = nomProduit;
+                quantite = quantiteProduit;
+                datePeremption = new Date(datePeremptionProduit);
+            } else {
+                nom = document.getElementById('nomProduit').value;
+                quantite = parseInt(document.getElementById('quantiteProduit').value);
+                const datePeremptionProduit = document.getElementById('datePeremptionProduit').value;
+                datePeremption = new Date(datePeremptionProduit);
+
+                if (!nom || !quantite || !datePeremptionProduit) {
+                    alert('Veuillez remplir tous les champs.');
+                    return;
+                }
+            }
+            if (enCoursDeTest == false) {
+                alert('zezefzefzef');
+            }
+
+            
+            if (quantite <= 0) {
+                if (enCoursDeTest == false) {
+                    alert('La quantité du produit doit être supérieure à zéro.');
+                }
+                return;
+            }
+
+            const dateActuelle = new Date();
+            if (datePeremption < dateActuelle) {
+                if (enCoursDeTest == false) {
+                    alert('La date de péremption du produit est déjà passée.');
+                }
+                return;
+            }
+
+            const produit = { nom: nom, quantite: quantite, datePeremption: datePeremption.toISOString().split('T')[0] };
+            stock.push(produit);
+            afficherStock();
+            resetForm();
+        }
+
+        function supprimerProduit(index) {
+            stock.splice(index, 1);
+            afficherStock();
+        }
+
+        function afficherStock() {
+            const stockList = document.getElementById('stock-list');
+            stockList.innerHTML = '';
+            stock.forEach((produit, index) => {
+                const produitDiv = document.createElement('div');
+                produitDiv.className = 'produit';
+                produitDiv.innerHTML = `
+                    <span>${produit.nom} - Quantité: ${produit.quantite} - Date de péremption: ${produit.datePeremption}</span>
+                    <button onclick="supprimerProduit(${index})">Supprimer</button>
+                `;
+                stockList.appendChild(produitDiv);
+            });
+        }
+
+        function resetForm() {
+            document.getElementById('nomProduit').value = '';
+            document.getElementById('quantiteProduit').value = '';
+            document.getElementById('datePeremptionProduit').value = '';
+        }
+
+        // Tests unitaires
+        function runTests() {
+            enCoursDeTest = true; // Marque que les tests sont en cours
+            const testResult = document.getElementById('test-result');
+            testResult.innerHTML = '';
+            testAjouterProduit(testResult);
+            testSupprimerProduit(testResult);
+            testVerifierQuantiteProduits(testResult);
+            testQuantiteNegative(testResult);
+            testProduitPerime(testResult);        
+            enCoursDeTest = false; // Marque que les tests sont terminés
+        }
+
+        function testAjouterProduit(testResult) {
+            const initialStockLength = stock.length;
+            ajouterProduit("ProduitTest", 50, "2024-03-01");
+            if (stock.length !== initialStockLength + 1) {
+                testResult.innerHTML += "<p>Erreur dans le test d'ajout de produit.</p>";
+            } else {
+                testResult.innerHTML += "<p>Test d'ajout de produit. - OK</p>";
+            }
+        }
+
+        function testSupprimerProduit(testResult) {
+            const initialStockLength = stock.length;
+            supprimerProduit(0);
+            if (stock.length !== initialStockLength - 1) {
+                testResult.innerHTML += "<p>Erreur dans le test de suppression de produit.</p>";
+            } else {
+                testResult.innerHTML += "<p>Test de suppression de produit. - OK</p>";
+            }
+        }
+
+        function testVerifierQuantiteProduits(testResult) {
+            console.log('cdede');
+            ajouterProduit("ProduitTest", 40, "2024-03-01");
+            const ProduitTestStock = stock.find(produit => produit.nom === "ProduitTest");
+            if (ProduitTestStock.quantite !== 40) {
+                testResult.innerHTML += "<p>Erreur dans le test de vérification de quantité de produits après ajout.</p>";
+            } else {
+                supprimerProduit(0);
+                testResult.innerHTML += "<p>Test de vérification de quantité de produits après ajout. - OK</p>";
+            }
+        }
+
+        function testQuantiteNegative(testResult) {
+            ajouterProduit("ProduitTest", -50, "2024-03-01");
+            const ProduitTestStock = stock.find(produit => produit.nom === "ProduitTest");
+            if (ProduitTestStock) {
+                testResult.innerHTML += "<p>Erreur dans le test de vérification de quantité négative.</p>";
+            } else {
+                testResult.innerHTML += "<p>Test de vérification de quantité négative. - OK</p>";
+            }
+        }
+
+        function testProduitPerime(testResult) {
+            ajouterProduit("ProduitTest", 50, "2022-01-01");
+            const ProduitTestStock = stock.find(produit => new Date(produit.datePeremption) < new Date());
+            if (ProduitTestStock) {
+                testResult.innerHTML += "<p>Erreur dans le test de vérification de produit périmé.</p>";
+            } else {
+                testResult.innerHTML += "<p>Test de vérification de produit périmé. - OK</p>";
+            }
+        }
+    </script>
+</body>
+</html>
