@@ -37,6 +37,9 @@
             <input type="date" id="datePeremptionProduit">
             <input type="number" id="prixProduit" placeholder="Prix">
             <button onclick="ajouterProduit()">Ajouter produit</button>
+            <h3>Appliquer un coupon</h3>
+            <input type="text" id="couponCode" placeholder="Code du coupon">
+            <button onclick="appliquerCoupon()">Appliquer</button>
             <h3>Tests</h3>
             <button onclick="runTests()">Exécuter les tests</button>
             <div id="test-result"></div>
@@ -46,6 +49,54 @@
     <script>
         let enCoursDeTest = false; // Variable de contrôle pour indiquer si les tests sont en cours
         let stock = [];
+        let coupon; // Déclarer la variable coupon ici
+
+        const coupons = {
+            "moins10pvg": { taux: 0.1, produits: ["Plante", "Viande", "Graine"] }, // Réduction de 10% sur Plante, Viande et Graine
+            "moins20": { taux: 0.2, produits: [] }, // Réduction de 20% sur tous les articles
+            // Ajoutez d'autres coupons au besoin
+        };
+
+        function appliquerCoupon() {
+            const couponCode = document.getElementById('couponCode').value;
+
+            if (couponCode in coupons) {
+                coupon = coupons[couponCode];
+                recalculerPrix();
+            } else {
+                alert('Coupon invalide.');
+            }
+        }
+
+        function recalculerPrix() {
+            const stockList = document.getElementById('stock-list');
+            stockList.innerHTML = '';
+            let prixTotal = 0;
+
+            stock.forEach((produit, index) => {
+                let prixProduit = produit.prix;
+                let prixAvantCoupon = produit.prix * produit.quantite;
+
+                if (coupon && (coupon.produits.length === 0 || coupon.produits.includes(produit.nom))) {
+                    prixProduit *= (1 - coupon.taux);
+                    prixAvantCoupon = prixProduit * produit.quantite;
+                }
+
+                prixTotal += prixAvantCoupon;
+
+                const produitDiv = document.createElement('div');
+                produitDiv.className = 'produit';
+                produitDiv.innerHTML = `
+                    <span>${produit.nom} - Quantité: ${produit.quantite} - Date de péremption: ${produit.datePeremption} - Prix: ${parseFloat(prixProduit).toFixed(2)}</span>
+                    <button onclick="supprimerProduit(${index})">Supprimer</button>
+                `;
+                stockList.appendChild(produitDiv);
+            });
+
+            const prixTotalDiv = document.createElement('div');
+            prixTotalDiv.innerHTML = `<strong>Prix total: ${prixTotal.toFixed(2)}</strong>`;
+            stockList.appendChild(prixTotalDiv);
+        }
 
         function ajouterProduit(nomProduit, quantiteProduit, datePeremptionProduit, prixProduit) {
             let nom, quantite, datePeremption, prix;
@@ -90,15 +141,18 @@
                 return;
             }
 
+            // Ajoute le produit au stock
             const produit = { nom: nom, quantite: quantite, datePeremption: datePeremption.toISOString().split('T')[0], prix: prix };
             stock.push(produit);
-            afficherStock();
+            afficherStock();         
+            recalculerPrix();
+
             resetForm();
         }
 
         function supprimerProduit(index) {
             stock.splice(index, 1);
-            afficherStock();
+            recalculerPrix();
         }
 
         function afficherStock() {
