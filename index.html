@@ -49,17 +49,126 @@
     <script>
         let enCoursDeTest = false; // Variable de contrôle pour indiquer si les tests sont en cours
         let stock = [];
-        let coupon; // Déclarer la variable coupon ici
-
+        let coupon; 
+        let prixTotalGlobal = 0;
+        
         const coupons = {
             "moins10pvg": { taux: 0.1, produits: ["Plante", "Viande", "Graine"] }, // Réduction de 10% sur Plante, Viande et Graine
             "moins20": { taux: 0.2, produits: [] }, // Réduction de 20% sur tous les articles
+            "test": { taux: 0.1, produits: ["ProduitTest2", "ProduitTest3", "ProduitTestX"] }, // Test de réduction de 10% sur ProduitTest2, ProduitTest3 et ProduitTestX
             // Ajoutez d'autres coupons au besoin
         };
 
-        function appliquerCoupon() {
-            const couponCode = document.getElementById('couponCode').value;
+        
 
+        // Tests unitaires
+
+        function runTests() {
+            enCoursDeTest = true; // Marque que les tests sont en cours
+            const testResult = document.getElementById('test-result');
+            testResult.innerHTML = '';
+            testAjouterProduit(testResult);
+            testSupprimerProduit(testResult);
+            testVerifierQuantiteProduits(testResult);
+            testQuantiteNegative(testResult);
+            testProduitPerime(testResult);   
+            testCoupon(testResult);     
+            enCoursDeTest = false; // Marque que les tests sont terminés
+        }
+
+        function testAjouterProduit(testResult) {
+            const initialStockLength = stock.length;
+            ajouterProduit("ProduitTest", 50, "2024-03-01", 9999);
+            if (stock.length !== initialStockLength + 1) {
+                testResult.innerHTML += "<p style="+"color:red"+">Erreur dans le test d'ajout de produit.</p>";
+            } else {
+                testResult.innerHTML += "<p style="+"color:green"+">Test d'ajout de produit. - OK</p>";
+            }
+        }
+
+        function testSupprimerProduit(testResult) {
+            const initialStockLength = stock.length;
+            supprimerProduit(stock.length - 1);
+            if (stock.length !== initialStockLength - 1) {
+                testResult.innerHTML += "<p style="+"color:red"+">Erreur dans le test de suppression de produit.</p>";
+            } else {
+                testResult.innerHTML += "<p style="+"color:green"+">Test de suppression de produit. - OK</p>";
+            }
+        }
+
+        function testVerifierQuantiteProduits(testResult) {
+            ajouterProduit("ProduitTest", 40, "2024-03-01", 9999);
+            const ProduitTestStock = stock.find(produit => produit.nom === "ProduitTest");
+            if (ProduitTestStock.quantite !== 40) {
+                testResult.innerHTML += "<p style="+"color:red"+">Erreur dans le test de vérification de quantité de produits après ajout.</p>";
+            } else {
+                supprimerProduit(stock.length - 1);
+                testResult.innerHTML += "<p style="+"color:green"+">Test de vérification de quantité de produits après ajout. - OK</p>";
+            }
+        }
+
+        function testQuantiteNegative(testResult) {
+            ajouterProduit("ProduitTest", -50, "2024-03-01", 9999);
+            const ProduitTestStock = stock.find(produit => produit.nom === "ProduitTest");
+            if (ProduitTestStock) {
+                testResult.innerHTML += "<p style="+"color:red"+">Erreur dans le test de vérification de quantité négative.</p>";
+            } else {
+                testResult.innerHTML += "<p style="+"color:green"+">Test de vérification de quantité négative. - OK</p>";
+            }
+        }
+
+        function testProduitPerime(testResult) {
+            ajouterProduit("ProduitTest", 50, "2022-01-01", 9999);
+            const ProduitTestStock = stock.find(produit => new Date(produit.datePeremption) < new Date());
+            if (ProduitTestStock) {
+                testResult.innerHTML += "<p style="+"color:red"+">Erreur dans le test de vérification de produit périmé.</p>";
+            } else {
+                testResult.innerHTML += "<p style="+"color:green"+">Test de vérification de produit périmé. - OK</p>";
+            }
+        }
+        
+        function testCoupon(testResult) {
+            prixTest = prixTotalGlobal; //prixTest est le prix des produits déjà ajoutés
+            if (prixTest == 399960) {
+                prixTest = 0; // Si aucun produit n'est déja présent, prixTest prend la valeur du dernier produit ajouté par le test, soit testVerifierQuantiteProduits, qui est égal à 399960. Dans ce cas, je remets prixTest à 0.
+            }
+            ajouterProduit("ProduitTest", 10, "2024-03-01", 1000);
+            ajouterProduit("ProduitTest2", 10, "2024-03-01", 1000);
+            ajouterProduit("ProduitTest3", 10, "2024-03-01", 1000);
+            prixTotalTest = prixTotalGlobal - prixTest; // apres avoir ajouté mes produits de test, je veux retrouver quelle valeur ils ont ajouté à mon prix total, j'enlève donc à celui-ci la valeur des produits qui étaient présents avant mon test (prixTest)
+            if (prixTotalTest !== 30000) {
+                testResult.innerHTML += "<p style="+"color:red"+">Erreur dans le test de vérification des coupons</p>";
+            }
+            else {
+                appliquerCoupon("test");
+                prixTotalTest = prixTotalTest / 3; // pour obtenir la valeur d'un seul de mes produits de test avant réduction
+                prixTotalTest = (prixTotalTest * 0.9) + (prixTotalTest * 0.9) + prixTotalTest; // pour calculer le prix total si la réduction de 10% ne s'applique que sur deux des troix produits
+                if (prixTotalTest !== 28000) {
+                    testResult.innerHTML += "<p style="+"color:red"+">Erreur dans le test de vérification des coupons</p>";
+                } else {
+                    supprimerProduit(stock.length - 1);
+                    supprimerProduit(stock.length - 1);
+                    supprimerProduit(stock.length - 1);
+                    testResult.innerHTML += "<p style="+"color:green"+">Test de vérification des coupons. - OK</p>";
+                }
+            }
+        }
+
+
+
+
+
+
+        // Reste du code
+
+        function appliquerCoupon(nomCoupon) {
+            let couponCode;
+            if (nomCoupon) {
+                couponCode = nomCoupon;
+            } else {
+                couponCode = document.getElementById('couponCode').value;
+            }
+            
             if (couponCode in coupons) {
                 coupon = coupons[couponCode];
                 recalculerPrix();
@@ -83,6 +192,7 @@
                 }
 
                 prixTotal += prixAvantCoupon;
+                prixTotalGlobal = prixTotal;
 
                 const produitDiv = document.createElement('div');
                 produitDiv.className = 'produit';
@@ -176,69 +286,6 @@
             document.getElementById('prixProduit').value = '';
         }
 
-        // Tests unitaires
-        function runTests() {
-            enCoursDeTest = true; // Marque que les tests sont en cours
-            const testResult = document.getElementById('test-result');
-            testResult.innerHTML = '';
-            testAjouterProduit(testResult);
-            testSupprimerProduit(testResult);
-            testVerifierQuantiteProduits(testResult);
-            testQuantiteNegative(testResult);
-            testProduitPerime(testResult);        
-            enCoursDeTest = false; // Marque que les tests sont terminés
-        }
-
-        function testAjouterProduit(testResult) {
-            const initialStockLength = stock.length;
-            ajouterProduit("ProduitTest", 50, "2024-03-01", 9999);
-            if (stock.length !== initialStockLength + 1) {
-                testResult.innerHTML += "<p>Erreur dans le test d'ajout de produit.</p>";
-            } else {
-                testResult.innerHTML += "<p>Test d'ajout de produit. - OK</p>";
-            }
-        }
-
-        function testSupprimerProduit(testResult) {
-            const initialStockLength = stock.length;
-            supprimerProduit(stock.length - 1);
-            if (stock.length !== initialStockLength - 1) {
-                testResult.innerHTML += "<p>Erreur dans le test de suppression de produit.</p>";
-            } else {
-                testResult.innerHTML += "<p>Test de suppression de produit. - OK</p>";
-            }
-        }
-
-        function testVerifierQuantiteProduits(testResult) {
-            ajouterProduit("ProduitTest", 40, "2024-03-01", 9999);
-            const ProduitTestStock = stock.find(produit => produit.nom === "ProduitTest");
-            if (ProduitTestStock.quantite !== 40) {
-                testResult.innerHTML += "<p>Erreur dans le test de vérification de quantité de produits après ajout.</p>";
-            } else {
-                supprimerProduit(stock.length - 1);
-                testResult.innerHTML += "<p>Test de vérification de quantité de produits après ajout. - OK</p>";
-            }
-        }
-
-        function testQuantiteNegative(testResult) {
-            ajouterProduit("ProduitTest", -50, "2024-03-01", 9999);
-            const ProduitTestStock = stock.find(produit => produit.nom === "ProduitTest");
-            if (ProduitTestStock) {
-                testResult.innerHTML += "<p>Erreur dans le test de vérification de quantité négative.</p>";
-            } else {
-                testResult.innerHTML += "<p>Test de vérification de quantité négative. - OK</p>";
-            }
-        }
-
-        function testProduitPerime(testResult) {
-            ajouterProduit("ProduitTest", 50, "2022-01-01", 9999);
-            const ProduitTestStock = stock.find(produit => new Date(produit.datePeremption) < new Date());
-            if (ProduitTestStock) {
-                testResult.innerHTML += "<p>Erreur dans le test de vérification de produit périmé.</p>";
-            } else {
-                testResult.innerHTML += "<p>Test de vérification de produit périmé. - OK</p>";
-            }
-        }
     </script>
 </body>
 </html>
