@@ -35,6 +35,7 @@
             <input type="text" id="nomProduit" placeholder="Nom du produit">
             <input type="number" id="quantiteProduit" placeholder="Quantité">
             <input type="date" id="datePeremptionProduit">
+            <input type="number" id="prixProduit" placeholder="Prix">
             <button onclick="ajouterProduit()">Ajouter produit</button>
             <h3>Tests</h3>
             <button onclick="runTests()">Exécuter les tests</button>
@@ -45,29 +46,27 @@
     <script>
         let enCoursDeTest = false; // Variable de contrôle pour indiquer si les tests sont en cours
         let stock = [];
-        
-        function ajouterProduit(nomProduit, quantiteProduit, datePeremptionProduit) {
-            let nom, quantite, datePeremption;
+
+        function ajouterProduit(nomProduit, quantiteProduit, datePeremptionProduit, prixProduit) {
+            let nom, quantite, datePeremption, prix;
             
             if (nomProduit && quantiteProduit && datePeremptionProduit) {
                 nom = nomProduit;
                 quantite = quantiteProduit;
                 datePeremption = new Date(datePeremptionProduit);
+                prix = prixProduit;
             } else {
                 nom = document.getElementById('nomProduit').value;
                 quantite = parseInt(document.getElementById('quantiteProduit').value);
                 const datePeremptionProduit = document.getElementById('datePeremptionProduit').value;
                 datePeremption = new Date(datePeremptionProduit);
+                prix = document.getElementById('prixProduit').value;
 
-                if (!nom || !quantite || !datePeremptionProduit) {
+                if (!nom || !quantite || !datePeremptionProduit || !prix) {
                     alert('Veuillez remplir tous les champs.');
                     return;
                 }
             }
-            if (enCoursDeTest == false) {
-                alert('zezefzefzef');
-            }
-
             
             if (quantite <= 0) {
                 if (enCoursDeTest == false) {
@@ -84,7 +83,14 @@
                 return;
             }
 
-            const produit = { nom: nom, quantite: quantite, datePeremption: datePeremption.toISOString().split('T')[0] };
+            if (prix <= 0) {
+                if (enCoursDeTest == false) {
+                    alert('Le prix du produit doit être supérieur à zéro.');
+                }
+                return;
+            }
+
+            const produit = { nom: nom, quantite: quantite, datePeremption: datePeremption.toISOString().split('T')[0], prix: prix };
             stock.push(produit);
             afficherStock();
             resetForm();
@@ -102,7 +108,7 @@
                 const produitDiv = document.createElement('div');
                 produitDiv.className = 'produit';
                 produitDiv.innerHTML = `
-                    <span>${produit.nom} - Quantité: ${produit.quantite} - Date de péremption: ${produit.datePeremption}</span>
+                    <span>${produit.nom} - Quantité: ${produit.quantite} - Date de péremption: ${produit.datePeremption} - Prix: ${produit.prix}</span>
                     <button onclick="supprimerProduit(${index})">Supprimer</button>
                 `;
                 stockList.appendChild(produitDiv);
@@ -113,6 +119,7 @@
             document.getElementById('nomProduit').value = '';
             document.getElementById('quantiteProduit').value = '';
             document.getElementById('datePeremptionProduit').value = '';
+            document.getElementById('prixProduit').value = '';
         }
 
         // Tests unitaires
@@ -130,7 +137,7 @@
 
         function testAjouterProduit(testResult) {
             const initialStockLength = stock.length;
-            ajouterProduit("ProduitTest", 50, "2024-03-01");
+            ajouterProduit("ProduitTest", 50, "2024-03-01", 9999);
             if (stock.length !== initialStockLength + 1) {
                 testResult.innerHTML += "<p>Erreur dans le test d'ajout de produit.</p>";
             } else {
@@ -140,7 +147,7 @@
 
         function testSupprimerProduit(testResult) {
             const initialStockLength = stock.length;
-            supprimerProduit(0);
+            supprimerProduit(stock.length - 1);
             if (stock.length !== initialStockLength - 1) {
                 testResult.innerHTML += "<p>Erreur dans le test de suppression de produit.</p>";
             } else {
@@ -149,19 +156,18 @@
         }
 
         function testVerifierQuantiteProduits(testResult) {
-            console.log('cdede');
-            ajouterProduit("ProduitTest", 40, "2024-03-01");
+            ajouterProduit("ProduitTest", 40, "2024-03-01", 9999);
             const ProduitTestStock = stock.find(produit => produit.nom === "ProduitTest");
             if (ProduitTestStock.quantite !== 40) {
                 testResult.innerHTML += "<p>Erreur dans le test de vérification de quantité de produits après ajout.</p>";
             } else {
-                supprimerProduit(0);
+                supprimerProduit(stock.length - 1);
                 testResult.innerHTML += "<p>Test de vérification de quantité de produits après ajout. - OK</p>";
             }
         }
 
         function testQuantiteNegative(testResult) {
-            ajouterProduit("ProduitTest", -50, "2024-03-01");
+            ajouterProduit("ProduitTest", -50, "2024-03-01", 9999);
             const ProduitTestStock = stock.find(produit => produit.nom === "ProduitTest");
             if (ProduitTestStock) {
                 testResult.innerHTML += "<p>Erreur dans le test de vérification de quantité négative.</p>";
@@ -171,7 +177,7 @@
         }
 
         function testProduitPerime(testResult) {
-            ajouterProduit("ProduitTest", 50, "2022-01-01");
+            ajouterProduit("ProduitTest", 50, "2022-01-01", 9999);
             const ProduitTestStock = stock.find(produit => new Date(produit.datePeremption) < new Date());
             if (ProduitTestStock) {
                 testResult.innerHTML += "<p>Erreur dans le test de vérification de produit périmé.</p>";
