@@ -138,7 +138,6 @@
             ajouterProduit("ProduitTest3", 10, "2024-03-01", 1000);
             prixTotalTest = prixTotalGlobal - prixTest; // apres avoir ajouté mes produits de test, je veux retrouver quelle valeur ils ont ajouté à mon prix total, j'enlève donc à celui-ci la valeur des produits qui étaient présents avant mon test (prixTest)
             if (prixTotalTest !== 30000) {
-                console.log('test');
                 testResult.innerHTML += "<p style="+"color:red"+">Erreur dans le test de vérification des coupons</p>";
             }
             else {
